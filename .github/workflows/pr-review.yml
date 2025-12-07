@@ -39,7 +39,6 @@ jobs:
           pr_reviewer.num_max_findings: 5
           pr_reviewer.require_score_review: true
           # there also are e.g. require_ticket_analysis_review for Jira links, etc
-          pr_update_changelog.auto: true  # not documented
           pr_update_changelog.push_changelog: true
           pr_update_changelog.extra_instructions: ${{ env.changelog_instructions }}
 
