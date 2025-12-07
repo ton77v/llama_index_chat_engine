@@ -1,0 +1,19 @@
+name: Run on PR Comment
+
+on:
+  issue_comment:
+    types: [ created, edited ]
+
+jobs:
+  run-on-pr-comment:
+    if: github.event.issue.pull_request != ''
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Debug event
+        run: |
+          echo "Comment: ${{ github.event.comment.body }}"
+          echo "User: ${{ github.actor }}"
