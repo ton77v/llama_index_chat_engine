@@ -49,15 +49,24 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+            
             await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body: '/changelog\n' + process.env.INSTRUCTIONS
+              owner,
+              repo,
+              issue_number,
+              body: '/changelog'
+            });
+            
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: process.env.INSTRUCTIONS
             });
         env:
           INSTRUCTIONS: |
-            ---
             Ask a question to PR Agent using `/ask` "..." command 💬
             
             Use `/help` to get all the commands available
