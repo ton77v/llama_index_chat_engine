@@ -6,7 +6,8 @@ on:
 
 jobs:
   run-on-pr-comment:
-    if: github.event.issue.pull_request != ''
+    # if: github.event.issue.pull_request != ''
+    if: ${{ github.event.sender.type != 'Bot' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -17,3 +18,19 @@ jobs:
         run: |
           echo "Comment: ${{ github.event.comment.body }}"
           echo "User: ${{ github.actor }}"
+
+      - name: Trigger PR Agent action step
+        id: pragent
+        uses: qodo-ai/pr-agent@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+          # https://docs.litellm.ai/docs/providers
+          CONFIG__MODEL: "deepseek/deepseek-chat"
+          CONFIG__CUSTOM_MODEL_MAX_TOKENS: "64000"
+          OPENAI__API_BASE: "https://api.deepseek.com"
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          # https://qodo-merge-docs.qodo.ai/tools/review/#configuration-options
+          pr_reviewer.num_max_findings: 5
+          pr_reviewer.require_score_review: true
+          pr_reviewer.extra_instructions: ${{ env.reviewer_custom_prompt }}
