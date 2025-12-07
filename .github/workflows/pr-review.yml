@@ -8,7 +8,7 @@ on:
 
 jobs:
   pr_agent_job:
-    name: Run PR Agent action; describes PR, adds changelog, reviews PR and replies to comments
+    name: Run PR Agent action; describes PR, reviews it and replies to comments
     if: ${{ github.event.sender.type != 'Bot' && github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     permissions:
