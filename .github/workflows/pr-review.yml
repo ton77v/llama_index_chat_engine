@@ -9,7 +9,8 @@ on:
 jobs:
   pr_agent_job:
     name: Run PR Agent action; describes PR, reviews it and replies to comments
-    if: ${{ github.event.sender.type != 'Bot' && github.event.pull_request.draft == false }}
+    # if: ${{ github.event.sender.type != 'Bot' ... # use this when don't need auto changelog generation
+    if: ${{ github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -42,8 +43,8 @@ jobs:
           pr_update_changelog.push_changelog: true
           pr_update_changelog.extra_instructions: ${{ env.changelog_instructions }}
 
-      - name: Comment on PR with instructions  # just when we open the PR
-        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+      - name: Comment on PR with instructions & trigger changelog generation  # just when we open the PR or promote draft one to ready
+        if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'ready_for_review')
         uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -52,10 +53,11 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body: process.env.INSTRUCTIONS
+              body: '/changelog\n' + process.env.INSTRUCTIONS
             });
         env:
           INSTRUCTIONS: |
-            Ask a question to PR Agent using `\ask` "..." command 💬
+            ---
+            Ask a question to PR Agent using `/ask` "..." command 💬
             
-            Use `\help` to get all the commands available
+            Use `/help` to get all the commands available
