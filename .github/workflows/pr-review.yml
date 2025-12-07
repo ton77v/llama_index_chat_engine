@@ -8,14 +8,21 @@ on:
 
 jobs:
   pr_agent_job:
-    name: Run PR Agent action; describes PR, adds review and replies to comments
-    if: ${{ github.event.sender.type != 'Bot' }}
+    name: Run PR Agent action; describes PR, adds changelog, reviews PR and replies to comments
+    if: ${{ github.event.sender.type != 'Bot' && github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     permissions:
       issues: write
       pull-requests: write
       contents: write
-
+    env:
+      changelog_instructions: |
+        Follow this format:
+        - title: (DATE) [version_from_pyproject.toml](https://_PR_LINK_) followed by ___ separator
+        - body should ONLY contain bullets of changes, no additional texts like "Added", etc
+        - start the bullet with emoji: 🚀 rocket for the new feature 🐞 bug for bugfix 
+        🔥 fire for improvement 📄 paper for documentation-related and 🚨 alarm for vulnerability fix
+    
     steps:
       - name: Trigger PR Agent action step
         id: pragent
@@ -32,6 +39,9 @@ jobs:
           pr_reviewer.num_max_findings: 5
           pr_reviewer.require_score_review: true
           # there also are e.g. require_ticket_analysis_review for Jira links, etc
+          pr_update_changelog.auto: true  # not documented
+          pr_update_changelog.push_changelog: true
+          pr_update_changelog.extra_instructions: ${{ env.changelog_instructions }}
 
       - name: Comment on PR with instructions  # just when we open the PR
         if: github.event_name == 'pull_request' && github.event.action == 'opened'
