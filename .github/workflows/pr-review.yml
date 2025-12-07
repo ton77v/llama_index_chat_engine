@@ -19,7 +19,7 @@ jobs:
     env:
       changelog_instructions: |
         Follow this format:
-        - title: (DATE) [version_from_pyproject.toml](https://_PR_LINK_) followed by ___ separator
+        - title: (DATE) [version_from_pyproject.toml](https://_PR_LINK_)
         - body should ONLY contain bullets of changes, no additional texts like "Added", etc
         - start the bullet with emoji: 🚀 rocket for the new feature 🐞 bug for bugfix 
         🔥 fire for improvement 📄 paper for documentation-related and 🚨 alarm for vulnerability fix
