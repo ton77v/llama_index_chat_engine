@@ -6,7 +6,8 @@ on:
 
 jobs:
   run-on-pr-comment:
-    if: github.event.issue.pull_request != ''
+    # if: github.event.issue.pull_request != ''
+    if: ${{ github.event.sender.type != 'Bot' }}
     runs-on: ubuntu-latest
 
     steps:
