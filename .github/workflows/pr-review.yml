@@ -1,24 +1,22 @@
-name: Run on PR Comment
-
+name: PR Review with Qodo PR Agent
 on:
+  pull_request:
+    # types: [opened, synchronize, labeled, unlabeled]  # will trigger @ every change | won't review ⚠️
+    types: [ opened, reopened, ready_for_review ]
   issue_comment:
-    types: [ created, edited ]
+    types: [ created ]
 
 jobs:
-  run-on-pr-comment:
-    # if: github.event.issue.pull_request != ''
+  pr_agent_job:
+    name: Run PR Agent action; describes PR, adds review and replies to comments
     if: ${{ github.event.sender.type != 'Bot' }}
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: write
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-
-      - name: Debug event
-        run: |
-          echo "Comment: ${{ github.event.comment.body }}"
-          echo "User: ${{ github.actor }}"
-
       - name: Trigger PR Agent action step
         id: pragent
         uses: qodo-ai/pr-agent@main
@@ -33,4 +31,22 @@ jobs:
           # https://qodo-merge-docs.qodo.ai/tools/review/#configuration-options
           pr_reviewer.num_max_findings: 5
           pr_reviewer.require_score_review: true
-          pr_reviewer.extra_instructions: ${{ env.reviewer_custom_prompt }}
+          # there also are e.g. require_ticket_analysis_review for Jira links, etc
+
+      - name: Comment on PR with instructions  # just when we open the PR
+        if: github.event_name == 'pull_request' && github.event.action == 'opened'
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: process.env.INSTRUCTIONS
+            });
+        env:
+          INSTRUCTIONS: |
+            Ask a question to PR Agent using `\ask` "..." command 💬
+            
+            Use `\help` to get all the commands available
