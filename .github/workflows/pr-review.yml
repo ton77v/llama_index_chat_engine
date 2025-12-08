@@ -17,10 +17,17 @@ jobs:
       pull-requests: write
       contents: write
     env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
+      # https://docs.litellm.ai/docs/providers
+      CONFIG__MODEL: "deepseek/deepseek-chat"
+      CONFIG__CUSTOM_MODEL_MAX_TOKENS: "64000"
+      OPENAI__API_BASE: "https://api.deepseek.com"
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
       changelog_instructions: |
         Follow this format:
         - title: (DATE) [version_from_pyproject.toml](https://_PR_LINK_)
-        - body should ONLY contain bullets of changes, no additional texts like "Added", etc
+        - body should ONLY contain bullets of changes, **no subtitles like "Added", etc***, ONLY BULLET POINTS!
         - start the bullet with emoji: 🚀 rocket for the new feature 🐞 bug for bugfix 
         🔥 fire for improvement 📄 paper for documentation-related and 🚨 alarm for vulnerability fix
     
@@ -29,19 +36,25 @@ jobs:
         id: pragent
         uses: qodo-ai/pr-agent@main
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
-          # https://docs.litellm.ai/docs/providers
-          CONFIG__MODEL: "deepseek/deepseek-chat"
-          CONFIG__CUSTOM_MODEL_MAX_TOKENS: "64000"
-          OPENAI__API_BASE: "https://api.deepseek.com"
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          # ... tokens etc comes from job
           # https://qodo-merge-docs.qodo.ai/tools/review/#configuration-options
           pr_reviewer.num_max_findings: 5
           pr_reviewer.require_score_review: true
           # there also are e.g. require_ticket_analysis_review for Jira links, etc
-          pr_update_changelog.push_changelog: true
           pr_update_changelog.extra_instructions: ${{ env.changelog_instructions }}
+
+      - name: Update changelog
+        run: |
+          docker run --rm --name pr_agent \
+              -e CONFIG__MODEL=${{ env.CONFIG__MODEL }} \
+              -e CONFIG__CUSTOM_MODEL_MAX_TOKENS=${{ env.CONFIG__CUSTOM_MODEL_MAX_TOKENS }} \
+              -e OPENAI__API_BASE=${{ env.OPENAI__API_BASE }} \
+              -e DEEPSEEK_API_KEY=${{ env.DEEPSEEK_API_KEY }} \
+              -e GITHUB__USER_TOKEN=${{ env.GITHUB__USER_TOKEN }} \
+              -e pr_update_changelog.push_changelog_changes=true \
+              -e pr_update_changelog.extra_instructions="${{ env.changelog_instructions }}" \
+              codiumai/pr-agent:latest \
+              --pr_url ${{ github.event.pull_request.html_url }} update_changelog
 
       - name: Comment on PR with instructions & trigger changelog generation  # just when we open the PR or promote draft one to ready
         if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'ready_for_review')
@@ -49,20 +62,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { owner, repo } = context.repo;
-            const issue_number = context.payload.pull_request.number;
-            
             await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number,
-              body: '/update_changelog'
-            });
-            
-            await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
               body: process.env.INSTRUCTIONS
             });
         env:
