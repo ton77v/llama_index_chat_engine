@@ -8,9 +8,8 @@ on:
 
 jobs:
   pr_agent_job:
-    name: Run PR Agent action; describes PR, reviews it and replies to comments
-    # if: ${{ github.event.sender.type != 'Bot' ... # use this when don't need auto changelog generation
-    if: ${{ github.event.pull_request.draft == false }}
+    name: Run PR Agent action; describes PR, reviews it, updates the changelog and replies to comments
+    if: ${{ github.event.sender.type != 'Bot' && github.event.pull_request.draft == false }}
     runs-on: ubuntu-latest
     permissions:
       issues: write
