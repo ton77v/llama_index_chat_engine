@@ -57,5 +57,5 @@ def try_stream() -> None:
 if __name__ == "__main__":
     print("Simple chat")
     try_simple()
-    # print("\n\nStreaming chat")
-    # try_stream()
+    print("\n\nStreaming chat")
+    try_stream()

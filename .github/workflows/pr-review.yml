@@ -17,6 +17,11 @@ jobs:
       pull-requests: write
       contents: write
     env:
+      # we do some steps just when we open the PR or promote draft one to ready
+      PR_STARTED: ${{ github.event_name == 'pull_request' &&
+        (github.event.action == 'opened' ||
+        github.event.action == 'ready_for_review') }}
+      # ---- config for the PR Agent ----
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       # OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
       # https://docs.litellm.ai/docs/providers
@@ -44,20 +49,21 @@ jobs:
           pr_update_changelog.extra_instructions: ${{ env.changelog_instructions }}
 
       - name: Update changelog
+        if: ${{ env.PR_STARTED == 'true' }}
         run: |
           docker run --rm --name pr_agent \
               -e CONFIG__MODEL=${{ env.CONFIG__MODEL }} \
               -e CONFIG__CUSTOM_MODEL_MAX_TOKENS=${{ env.CONFIG__CUSTOM_MODEL_MAX_TOKENS }} \
               -e OPENAI__API_BASE=${{ env.OPENAI__API_BASE }} \
               -e DEEPSEEK_API_KEY=${{ env.DEEPSEEK_API_KEY }} \
-              -e GITHUB__USER_TOKEN=${{ env.GITHUB__USER_TOKEN }} \
+              -e GITHUB__USER_TOKEN=${{ env.GITHUB_TOKEN }} \
               -e pr_update_changelog.push_changelog_changes=true \
               -e pr_update_changelog.extra_instructions="${{ env.changelog_instructions }}" \
               codiumai/pr-agent:latest \
               --pr_url ${{ github.event.pull_request.html_url }} update_changelog
 
-      - name: Comment on PR with instructions & trigger changelog generation  # just when we open the PR or promote draft one to ready
-        if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'ready_for_review')
+      - name: Comment on PR with instructions
+        if: ${{ env.PR_STARTED == 'true' }}
         uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
